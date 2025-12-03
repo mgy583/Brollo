@@ -18,6 +18,15 @@ pub struct UpdateBudgetRequest {
     pub end_date: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateBudgetRequest {
+    pub category_id: String,
+    pub amount: f64,
+    pub period: String,
+    pub start_date: String,
+    pub end_date: String,
+}
+
 #[derive(Deserialize)]
 pub struct ListQuery {
     #[serde(default = "default_page")]
@@ -61,10 +70,41 @@ pub async fn list_budgets(
 pub async fn create_budget(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
-    Json(mut budget): Json<Budget>,
+    Json(req): Json<CreateBudgetRequest>,
 ) -> Result<Json<ApiResponse<Budget>>> {
-    budget.user_id = claims.user_id;
-    budget.id = Some(ObjectId::new().to_hex());
+    use chrono::DateTime;
+
+    let start_date = DateTime::parse_from_rfc3339(&req.start_date)
+        .map_err(|_| Error::InvalidInput("Invalid start date format".to_string()))?
+        .with_timezone(&chrono::Utc);
+        
+    let end_date = DateTime::parse_from_rfc3339(&req.end_date)
+        .map_err(|_| Error::InvalidInput("Invalid end date format".to_string()))?
+        .with_timezone(&chrono::Utc);
+
+    let budget = Budget {
+        id: Some(ObjectId::new().to_hex()),
+        user_id: claims.user_id,
+        name: format!("Budget for {}", req.category_id),
+        budget_type: req.period,
+        start_date,
+        end_date,
+        amount: req.amount,
+        currency: "CNY".to_string(),
+        category_ids: vec![req.category_id],
+        account_ids: vec![],
+        spent: 0.0,
+        remaining: req.amount,
+        progress: 0.0,
+        alert_thresholds: vec![
+            common::AlertThreshold { percentage: 80, notified: false, notified_at: None },
+            common::AlertThreshold { percentage: 100, notified: false, notified_at: None },
+        ],
+        prediction: None,
+        status: "active".to_string(),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
     
     let collection = state.db.mongo.collection::<Budget>("budgets");
     collection.insert_one(&budget, None).await?;
