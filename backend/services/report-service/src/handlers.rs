@@ -49,19 +49,32 @@ pub struct DailyData {
 pub async fn monthly_report(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
-    Query(_query): Query<ReportQuery>,
+    Query(query): Query<ReportQuery>,
 ) -> Result<Json<ApiResponse<MonthlyReport>>> {
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     
-    let now = chrono::Utc::now();
-    let mut start_of_month = now;
-    start_of_month = start_of_month.with_day(1).unwrap();
+    let start_date = if let Some(date_str) = &query.start_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        let now = chrono::Utc::now();
+        now.with_day(1).unwrap().with_timezone(&chrono::Utc)
+    };
+
+    let end_date = if let Some(date_str) = &query.end_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        chrono::Utc::now()
+    };
     
     let filter = doc! {
         "user_id": &claims.user_id,
         "transaction_date": {
-            "$gte": mongodb::bson::to_bson(&start_of_month).unwrap(),
-            "$lte": mongodb::bson::to_bson(&now).unwrap(),
+            "$gte": mongodb::bson::to_bson(&start_date).unwrap(),
+            "$lte": mongodb::bson::to_bson(&end_date).unwrap(),
         }
     };
     
@@ -96,11 +109,34 @@ pub async fn monthly_report(
 pub async fn category_report(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
-    Query(_query): Query<ReportQuery>,
+    Query(query): Query<ReportQuery>,
 ) -> Result<Json<ApiResponse<Vec<CategoryReport>>>> {
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     
-    let filter = doc! { "user_id": &claims.user_id };
+    let start_date = if let Some(date_str) = &query.start_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        let now = chrono::Utc::now();
+        now.with_day(1).unwrap().with_timezone(&chrono::Utc)
+    };
+
+    let end_date = if let Some(date_str) = &query.end_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        chrono::Utc::now()
+    };
+
+    let filter = doc! { 
+        "user_id": &claims.user_id,
+        "transaction_date": {
+            "$gte": mongodb::bson::to_bson(&start_date).unwrap(),
+            "$lte": mongodb::bson::to_bson(&end_date).unwrap(),
+        }
+    };
     let mut cursor = collection.find(filter, None).await?;
     
     let mut category_totals: HashMap<String, f64> = HashMap::new();
@@ -140,18 +176,32 @@ pub async fn category_report(
 pub async fn trend_report(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
-    Query(_query): Query<ReportQuery>,
+    Query(query): Query<ReportQuery>,
 ) -> Result<Json<ApiResponse<TrendReport>>> {
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     
-    let now = chrono::Utc::now();
-    let start = now - chrono::Duration::days(30);
+    let start_date = if let Some(date_str) = &query.start_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        let now = chrono::Utc::now();
+        now - chrono::Duration::days(30)
+    };
+
+    let end_date = if let Some(date_str) = &query.end_date {
+        chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or_else(|_| chrono::Utc::now())
+    } else {
+        chrono::Utc::now()
+    };
     
     let filter = doc! {
         "user_id": &claims.user_id,
         "transaction_date": {
-            "$gte": mongodb::bson::to_bson(&start).unwrap(),
-            "$lte": mongodb::bson::to_bson(&now).unwrap(),
+            "$gte": mongodb::bson::to_bson(&start_date).unwrap(),
+            "$lte": mongodb::bson::to_bson(&end_date).unwrap(),
         }
     };
     
@@ -170,7 +220,7 @@ pub async fn trend_report(
         }
     }
     
-    let daily_data: Vec<DailyData> = daily_map
+    let mut daily_data: Vec<DailyData> = daily_map
         .into_iter()
         .map(|(date, (income, expense))| DailyData {
             date,
@@ -178,6 +228,9 @@ pub async fn trend_report(
             expense,
         })
         .collect();
+    
+    // Sort by date
+    daily_data.sort_by(|a, b| a.date.cmp(&b.date));
     
     Ok(Json(ApiResponse::success(TrendReport { daily_data })))
 }

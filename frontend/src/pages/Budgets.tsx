@@ -4,23 +4,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import api from '../utils/api'
+import { EXPENSE_CATEGORIES } from '../utils/constants'
 
 const { RangePicker } = DatePicker
-
-// 预定义分类（通常预算只针对支出分类）
-const EXPENSE_CATEGORIES = [
-  { value: 'shopping', label: '购物' },
-  { value: 'transport', label: '交通' },
-  { value: 'dining', label: '餐饮' },
-  { value: 'entertainment', label: '娱乐' },
-  { value: 'housing', label: '居住' },
-  { value: 'healthcare', label: '医疗' },
-  { value: 'education', label: '教育' },
-  { value: 'utilities', label: '水电煤' },
-  { value: 'communication', label: '通讯' },
-  { value: 'clothing', label: '服饰' },
-  { value: 'other_expense', label: '其他支出' }
-]
 
 export default function Budgets() {
   const [isModalOpen, setIsModalOpen] = useState(false)

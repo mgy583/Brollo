@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Ba
 import { Responsive, WidthProvider } from 'react-grid-layout'
 import dayjs from 'dayjs'
 import api from '../utils/api'
+import { EXPENSE_CATEGORIES } from '../utils/constants'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#4ECDC4', '#45B7D1']
 const { RangePicker } = DatePicker
@@ -61,23 +62,35 @@ export default function Reports() {
     }),
   })
 
-  const categoryChartData = categoryData?.data?.items?.map((item: any) => ({
-    name: item.category_name || item.category_id,
-    value: Math.abs(item.amount || 0),
-  })) || []
+  const categoryChartData = (Array.isArray(categoryData?.data) ? categoryData.data : []).map((item: any) => {
+    const category = EXPENSE_CATEGORIES.find(c => c.value === item.category_id)
+    return {
+      name: category ? category.label : (item.category_name || item.category_id),
+      value: Math.abs(item.amount || 0),
+    }
+  })
 
-  const trendChartData = trendData?.data?.items?.map((item: any) => ({
+  const trendChartData = (trendData?.data?.daily_data || []).map((item: any) => ({
     date: dayjs(item.date).format('MM-DD'),
     income: item.income || 0,
     expense: Math.abs(item.expense || 0),
-  })) || []
+  }))
 
   const categoryTableColumns = [
-    { title: '分类', dataIndex: 'category_name', key: 'category_name' },
+    { 
+      title: '分类', 
+      dataIndex: 'category_id', 
+      key: 'category_id',
+      render: (val: string) => {
+        const category = EXPENSE_CATEGORIES.find(c => c.value === val)
+        return category ? category.label : val
+      }
+    },
     { title: '支出金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${Math.abs(val || 0).toFixed(2)}` },
     { title: '交易笔数', dataIndex: 'count', key: 'count' },
     { title: '占比', key: 'percentage', render: (record: any) => {
-      const total = categoryData?.data?.items?.reduce((sum: number, item: any) => sum + Math.abs(item.amount || 0), 0) || 1
+      const list = Array.isArray(categoryData?.data) ? categoryData.data : []
+      const total = list.reduce((sum: number, item: any) => sum + Math.abs(item.amount || 0), 0) || 1
       const percent = (Math.abs(record.amount || 0) / total * 100).toFixed(1)
       return `${percent}%`
     }},
@@ -179,7 +192,7 @@ export default function Reports() {
           <Card title={<span className="drag-handle">分类详细统计</span>} style={{ height: '100%' }}>
             <Table
               columns={categoryTableColumns}
-              dataSource={categoryData?.data?.items || []}
+              dataSource={Array.isArray(categoryData?.data) ? categoryData.data : []}
               rowKey="category_id"
               pagination={false}
             />
