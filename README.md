@@ -57,7 +57,8 @@
 
 ```powershell
 # 克隆仓库并进入目录
-cd e:\workspace\abook
+git clone https://github.com/mgy583/brollo.git
+cd brollo
 
 # 启动所有服务
 docker-compose up -d
@@ -115,10 +116,24 @@ npm run dev
 npm run build
 ```
 
+### 辅助脚本 (Linux/Mac/Git Bash)
+
+项目根目录提供了一些辅助脚本用于快速管理服务：
+
+- `start-all.sh`: 启动所有服务
+- `stop-all.sh`: 停止所有服务
+- `restart-all.sh`: 重启所有服务
+- `status.sh`: 查看服务状态
+- `build.sh`: 构建项目
+- `deploy.sh`: 部署项目
+- `docker-logs.sh`: 查看 Docker 日志
+
+使用前请确保有执行权限: `chmod +x *.sh`
+
 ## 项目结构
 
 ```
-abook/
+brollo/
 ├── backend/
 │   ├── common/                 # 共享库
 │   │   ├── src/
@@ -348,7 +363,7 @@ kubectl get services
 
 ## 联系方式
 
-项目链接: https://github.com/yourusername/abook
+项目链接: https://github.com/mgy583/brollo
 
 ## 致谢
 
