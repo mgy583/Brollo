@@ -190,15 +190,15 @@ export default function Transactions() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="page-container">
+      <div className="page-header">
         <h1>交易记录</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
           新建交易
         </Button>
       </div>
 
-      <Card title="搜索筛选" style={{ marginBottom: 16 }}>
+      <Card title="搜索筛选" className="page-card">
         <Form form={searchForm} onFinish={handleSearch} layout="inline">
           <Form.Item name="transaction_type" label="交易类型">
             <Select placeholder="选择类型" style={{ width: 120 }} allowClear>
@@ -237,17 +237,20 @@ export default function Transactions() {
         </Form>
       </Card>
 
-      <Table
-        columns={columns}
-        dataSource={data?.data?.items || []}
-        loading={isLoading}
-        rowKey="_id"
-        pagination={{
-          total: data?.data?.pagination?.total || 0,
-          pageSize: data?.data?.pagination?.page_size || 10,
-          current: data?.data?.pagination?.page || 1,
-        }}
-      />
+      <Card title="交易列表" className="page-card">
+        <Table
+          className="page-table"
+          columns={columns}
+          dataSource={data?.data?.items || []}
+          loading={isLoading}
+          rowKey="_id"
+          pagination={{
+            total: data?.data?.pagination?.total || 0,
+            pageSize: data?.data?.pagination?.page_size || 10,
+            current: data?.data?.pagination?.page || 1,
+          }}
+        />
+      </Card>
 
       <Modal
         title={editingTransaction ? '编辑交易' : '新建交易'}

@@ -175,15 +175,15 @@ export default function Budgets() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="page-container">
+      <div className="page-header">
         <h1>预算管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
           新建预算
         </Button>
       </div>
 
-      <Card title="搜索筛选" style={{ marginBottom: 16 }}>
+      <Card title="搜索筛选" className="page-card">
         <Form form={searchForm} onFinish={handleSearch} layout="inline">
           <Form.Item name="period" label="预算周期">
             <Select placeholder="选择周期" style={{ width: 120 }} allowClear>
@@ -207,8 +207,9 @@ export default function Budgets() {
         </Form>
       </Card>
 
-      <Card title="预算列表">
+      <Card title="预算列表" className="page-card">
         <Table
+          className="page-table"
           columns={columns}
           dataSource={data?.data?.items || []}
           loading={isLoading}

@@ -1,0 +1,120 @@
+/* Element-like theme tweaks on top of Ant Design */
+:root {
+  --element-blue: #409EFF;
+  --element-bg: #f5f7fa;
+  --card-radius: 10px;
+  --control-radius: 6px;
+}
+
+body {
+  background: var(--element-bg);
+  color: #2c3e50;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] {
+  --element-blue: #40a9ff;
+  --element-bg: #0f1724;
+  --card-radius: 10px;
+  --control-radius: 6px;
+  --text-color: #e6eef8;
+  --text-color-secondary: rgba(230,238,248,0.7);
+  --card-bg: #0b1220;
+  --panel-bg: #07101a;
+  --border-color: rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] .ant-layout {
+  background: var(--element-bg);
+  color: var(--text-color);
+}
+
+/* Cards: softer, rounded, subtle shadow */
+.ant-card {
+  border-radius: var(--card-radius) !important;
+  box-shadow: 0 6px 18px rgba(34, 34, 34, 0.06);
+  border: 0 !important;
+  background: var(--card-bg, #fff);
+}
+
+.ant-card-head {
+  background: transparent;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+}
+
+/* Buttons: Element blue primary, rounded */
+.ant-btn-primary {
+  background: var(--element-blue);
+  border-color: var(--element-blue);
+  border-radius: var(--control-radius);
+  box-shadow: none;
+}
+
+.ant-btn {
+  border-radius: var(--control-radius);
+}
+
+/* Inputs/selects: softer borders */
+.ant-input, .ant-select-selector, .ant-input-number {
+  border-radius: var(--control-radius);
+  border-color: rgba(0,0,0,0.12) !important;
+}
+
+[data-theme="dark"] .ant-input, [data-theme="dark"] .ant-select-selector, [data-theme="dark"] .ant-input-number {
+  border-color: rgba(255,255,255,0.08) !important;
+  background: rgba(255,255,255,0.02);
+  color: var(--text-color);
+}
+
+/* Table header */
+.ant-table-thead > tr > th {
+  background: transparent;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Small utility */
+.drag-handle { cursor: move; }
+
+/* Make Statistic cards look cleaner */
+.ant-statistic {
+  font-weight: 600;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .ant-card { padding: 12px; }
+}
+
+/* Page layout helpers */
+.page-container {
+  padding: 20px;
+}
+.page-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.page-card {
+  margin-bottom: 16px;
+}
+.page-table .ant-table {
+  background: transparent;
+}
+
+[data-theme="dark"] .page-card,
+[data-theme="dark"] .ant-card,
+[data-theme="dark"] .ant-layout {
+  background: var(--panel-bg);
+}
+
+[data-theme="dark"] .ant-layout-sider {
+  background: #061122;
+}
+
