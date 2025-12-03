@@ -161,12 +161,9 @@ pub async fn get_transaction(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<Transaction>>> {
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid transaction ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     let transaction = collection
-        .find_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .find_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Transaction not found".to_string()))?;
     
@@ -180,9 +177,6 @@ pub async fn update_transaction(
     Json(req): Json<UpdateTransactionRequest>,
 ) -> Result<Json<ApiResponse<Transaction>>> {
     use chrono::DateTime;
-    
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid transaction ID".to_string()))?;
     
     let transaction_date = DateTime::parse_from_rfc3339(&req.transaction_date)
         .map_err(|_| Error::InvalidInput("Invalid date format".to_string()))?
@@ -214,11 +208,11 @@ pub async fn update_transaction(
     let update_doc = doc! { "$set": update_fields };
     
     collection
-        .update_one(doc! { "_id": oid, "user_id": &claims.user_id }, update_doc, None)
+        .update_one(doc! { "_id": &id, "user_id": &claims.user_id }, update_doc, None)
         .await?;
     
     let updated = collection
-        .find_one(doc! { "_id": oid }, None)
+        .find_one(doc! { "_id": &id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Transaction not found".to_string()))?;
     
@@ -230,12 +224,9 @@ pub async fn delete_transaction(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<()>>> {
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid transaction ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     let result = collection
-        .delete_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .delete_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?;
     
     if result.deleted_count == 0 {

@@ -77,12 +77,9 @@ pub async fn get_budget(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<Budget>>> {
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid budget ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Budget>("budgets");
     let budget = collection
-        .find_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .find_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Budget not found".to_string()))?;
     
@@ -96,9 +93,6 @@ pub async fn update_budget(
     Json(req): Json<UpdateBudgetRequest>,
 ) -> Result<Json<ApiResponse<Budget>>> {
     use chrono::DateTime;
-    
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid budget ID".to_string()))?;
     
     let start_date = DateTime::parse_from_rfc3339(&req.start_date)
         .map_err(|_| Error::InvalidInput("Invalid start date format".to_string()))?
@@ -122,11 +116,11 @@ pub async fn update_budget(
     };
     
     collection
-        .update_one(doc! { "_id": oid, "user_id": &claims.user_id }, update_doc, None)
+        .update_one(doc! { "_id": &id, "user_id": &claims.user_id }, update_doc, None)
         .await?;
     
     let updated = collection
-        .find_one(doc! { "_id": oid }, None)
+        .find_one(doc! { "_id": &id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Budget not found".to_string()))?;
     
@@ -138,12 +132,9 @@ pub async fn delete_budget(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<()>>> {
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid budget ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Budget>("budgets");
     let result = collection
-        .delete_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .delete_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?;
     
     if result.deleted_count == 0 {
@@ -158,12 +149,9 @@ pub async fn predict_budget(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<PredictionResult>>> {
-    let oid = ObjectId::parse_str(&id)
-        .map_err(|_| Error::InvalidInput("Invalid budget ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Budget>("budgets");
     let budget = collection
-        .find_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .find_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Budget not found".to_string()))?;
     
