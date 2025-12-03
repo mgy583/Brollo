@@ -1,5 +1,5 @@
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Card } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../utils/api'
@@ -7,12 +7,14 @@ import api from '../utils/api'
 export default function Accounts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<any>(null)
+  const [searchForm] = Form.useForm()
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
+  const [filters, setFilters] = useState<any>({})
 
   const { data, isLoading } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => api.get('/accounts'),
+    queryKey: ['accounts', filters],
+    queryFn: () => api.get('/accounts', { params: filters }),
   })
 
   const createMutation = useMutation({
@@ -128,6 +130,19 @@ export default function Accounts() {
     form.resetFields()
   }
 
+  const handleSearch = (values: any) => {
+    const searchFilters: any = {}
+    if (values.name) searchFilters.name = values.name
+    if (values.account_type) searchFilters.account_type = values.account_type
+    if (values.currency) searchFilters.currency = values.currency
+    setFilters(searchFilters)
+  }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    setFilters({})
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -136,6 +151,40 @@ export default function Accounts() {
           新建账户
         </Button>
       </div>
+
+      <Card title="搜索筛选" style={{ marginBottom: 16 }}>
+        <Form form={searchForm} onFinish={handleSearch} layout="inline">
+          <Form.Item name="name" label="账户名称">
+            <Input placeholder="输入账户名称" style={{ width: 180 }} />
+          </Form.Item>
+          <Form.Item name="account_type" label="账户类型">
+            <Select placeholder="选择类型" style={{ width: 150 }} allowClear>
+              <Select.Option value="savings">储蓄账户</Select.Option>
+              <Select.Option value="checking">支票账户</Select.Option>
+              <Select.Option value="credit_card">信用卡</Select.Option>
+              <Select.Option value="investment">投资账户</Select.Option>
+              <Select.Option value="cash">现金</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="currency" label="货币">
+            <Select placeholder="选择货币" style={{ width: 120 }} allowClear>
+              <Select.Option value="CNY">人民币</Select.Option>
+              <Select.Option value="USD">美元</Select.Option>
+              <Select.Option value="EUR">欧元</Select.Option>
+              <Select.Option value="GBP">英镑</Select.Option>
+              <Select.Option value="JPY">日元</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
 
       <Table
         columns={columns}

@@ -1,19 +1,23 @@
 import { Table, Card, Progress, Button, Modal, Form, Input, Select, DatePicker, message, Popconfirm, Space } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import api from '../utils/api'
 
+const { RangePicker } = DatePicker
+
 export default function Budgets() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<any>(null)
   const [form] = Form.useForm()
+  const [searchForm] = Form.useForm()
   const queryClient = useQueryClient()
+  const [filters, setFilters] = useState<any>({})
 
   const { data, isLoading } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: () => api.get('/budgets'),
+    queryKey: ['budgets', filters],
+    queryFn: () => api.get('/budgets', { params: filters }),
   })
 
   const createMutation = useMutation({
@@ -132,6 +136,21 @@ export default function Budgets() {
     },
   ]
 
+  const handleSearch = (values: any) => {
+    const searchFilters: any = {}
+    if (values.period) searchFilters.budget_type = values.period
+    if (values.dateRange) {
+      searchFilters.start_date = values.dateRange[0].toISOString()
+      searchFilters.end_date = values.dateRange[1].toISOString()
+    }
+    setFilters(searchFilters)
+  }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    setFilters({})
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -140,6 +159,30 @@ export default function Budgets() {
           新建预算
         </Button>
       </div>
+
+      <Card title="搜索筛选" style={{ marginBottom: 16 }}>
+        <Form form={searchForm} onFinish={handleSearch} layout="inline">
+          <Form.Item name="period" label="预算周期">
+            <Select placeholder="选择周期" style={{ width: 120 }} allowClear>
+              <Select.Option value="daily">每日</Select.Option>
+              <Select.Option value="weekly">每周</Select.Option>
+              <Select.Option value="monthly">每月</Select.Option>
+              <Select.Option value="yearly">每年</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="dateRange" label="日期范围">
+            <RangePicker />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
 
       <Card title="预算列表">
         <Table

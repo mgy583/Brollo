@@ -1,15 +1,19 @@
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Popconfirm, Space } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Popconfirm, Space, Card } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import api from '../utils/api'
 
+const { RangePicker } = DatePicker
+
 export default function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
   const [form] = Form.useForm()
+  const [searchForm] = Form.useForm()
   const queryClient = useQueryClient()
+  const [filters, setFilters] = useState<any>({})
 
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
@@ -17,8 +21,8 @@ export default function Transactions() {
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => api.get('/transactions'),
+    queryKey: ['transactions', filters],
+    queryFn: () => api.get('/transactions', { params: filters }),
   })
 
   const createMutation = useMutation({
@@ -134,6 +138,23 @@ export default function Transactions() {
     form.resetFields()
   }
 
+  const handleSearch = (values: any) => {
+    const searchFilters: any = {}
+    if (values.transaction_type) searchFilters.transaction_type = values.transaction_type
+    if (values.account_id) searchFilters.account_id = values.account_id
+    if (values.category_id) searchFilters.category_id = values.category_id
+    if (values.dateRange) {
+      searchFilters.start_date = values.dateRange[0].toISOString()
+      searchFilters.end_date = values.dateRange[1].toISOString()
+    }
+    setFilters(searchFilters)
+  }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    setFilters({})
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -142,6 +163,41 @@ export default function Transactions() {
           新建交易
         </Button>
       </div>
+
+      <Card title="搜索筛选" style={{ marginBottom: 16 }}>
+        <Form form={searchForm} onFinish={handleSearch} layout="inline">
+          <Form.Item name="transaction_type" label="交易类型">
+            <Select placeholder="选择类型" style={{ width: 120 }} allowClear>
+              <Select.Option value="income">收入</Select.Option>
+              <Select.Option value="expense">支出</Select.Option>
+              <Select.Option value="transfer">转账</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="account_id" label="账户">
+            <Select placeholder="选择账户" style={{ width: 150 }} allowClear>
+              {(accountsData?.data?.items || []).map((account: any) => (
+                <Select.Option key={account._id} value={account._id}>
+                  {account.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="category_id" label="分类">
+            <Input placeholder="输入分类ID" style={{ width: 150 }} />
+          </Form.Item>
+          <Form.Item name="dateRange" label="日期范围">
+            <RangePicker />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
 
       <Table
         columns={columns}
