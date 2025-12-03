@@ -114,9 +114,11 @@ export default function Budgets() {
   const columns = [
     { 
       title: '分类', 
-      dataIndex: 'category_id', 
-      key: 'category_id',
-      render: (val: string) => {
+      dataIndex: 'category_ids', 
+      key: 'category_ids',
+      render: (vals: string[]) => {
+        if (!vals || !Array.isArray(vals) || vals.length === 0) return '-';
+        const val = vals[0];
         const category = EXPENSE_CATEGORIES.find(c => c.value === val)
         return category ? category.label : val
       }

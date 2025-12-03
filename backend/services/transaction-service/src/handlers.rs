@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State, Extension},
     Json,
 };
-use common::{Transaction, Category, ApiResponse, PaginationResponse, PaginationMeta, Claims, Error, Result};
+use common::{Transaction, Category, Budget, ApiResponse, PaginationResponse, PaginationMeta, Claims, Error, Result};
 use mongodb::{bson::{self, doc, oid::ObjectId}, options::FindOptions};
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -125,6 +125,13 @@ pub async fn create_transaction(
         .map_err(|_| Error::InvalidInput("Invalid date format".to_string()))?
         .with_timezone(&chrono::Utc);
     
+    // Capture values needed for budget update
+    let transaction_type_for_update = req.transaction_type.clone();
+    let category_id_for_update = req.category_id.clone();
+    let amount_for_update = req.amount;
+    let user_id_for_update = claims.user_id.clone();
+    let transaction_date_for_update = transaction_date;
+
     let transaction = Transaction {
         id: Some(ObjectId::new().to_hex()),
         user_id: claims.user_id.clone(),
@@ -153,10 +160,35 @@ pub async fn create_transaction(
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     collection.insert_one(&transaction, None).await?;
     
+    // Update budgets if it's an expense
+    if transaction_type_for_update == "expense" {
+        let budgets_collection = state.db.mongo.collection::<Budget>("budgets");
+        let filter = doc! {
+            "user_id": &user_id_for_update,
+            "category_ids": &category_id_for_update,
+            "start_date": { "$lte": bson::to_bson(&transaction_date_for_update).unwrap() },
+            "end_date": { "$gte": bson::to_bson(&transaction_date_for_update).unwrap() },
+            "status": "active"
+        };
+        
+        let mut cursor = budgets_collection.find(filter, None).await?;
+        while cursor.advance().await? {
+            let mut budget = cursor.deserialize_current()?;
+            budget.spent += amount_for_update;
+            budget.remaining = budget.amount - budget.spent;
+            budget.progress = (budget.spent / budget.amount) * 100.0;
+            budget.updated_at = chrono::Utc::now();
+            
+            budgets_collection.replace_one(
+                doc! { "_id": budget.id.as_ref().unwrap() },
+                budget,
+                None
+            ).await?;
+        }
+    }
+    
     Ok(Json(ApiResponse::success(transaction)))
-}
-
-pub async fn get_transaction(
+}pub async fn get_transaction(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
