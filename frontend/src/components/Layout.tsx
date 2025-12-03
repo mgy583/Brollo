@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Layout as AntLayout, Menu, Avatar, Button, Space, Typography, Switch } from 'antd'
-import { useThemeStore } from '../stores/themeStore'
+import { Layout as AntLayout, Menu, Avatar, Button, Space, Typography } from 'antd'
 import { PieChartOutlined, WalletOutlined, TransactionOutlined, BarChartOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
@@ -19,8 +18,7 @@ export default function Layout() {
     navigate('/login')
   }
 
-  const theme = useThemeStore((s) => s.theme)
-  const setTheme = useThemeStore((s) => s.setTheme)
+  // Theme switching removed; we use Element-like theme globally.
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -60,7 +58,7 @@ export default function Layout() {
       <AntLayout>
         <Header style={{ background: 'transparent', padding: '8px 16px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Space size="middle">
-            <Switch checkedChildren="深色" unCheckedChildren="浅色" checked={theme === 'dark'} onChange={(checked) => setTheme(checked ? 'dark' : 'light')} aria-label="切换深浅色主题" />
+            <span style={{ color: 'var(--element-blue)', fontWeight: 600 }}>Element 主题</span>
             <Button type="default" onClick={() => navigate('/settings')}>个人设置</Button>
             <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>登出</Button>
           </Space>
