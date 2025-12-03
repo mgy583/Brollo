@@ -14,3 +14,4 @@ uuid = { workspace = true }
 tracing = { workspace = true }
 mongodb = { workspace = true }
 redis = { workspace = true }
+sqlx = { workspace = true }

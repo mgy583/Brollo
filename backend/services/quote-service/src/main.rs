@@ -26,8 +26,9 @@ async fn main() {
     
     let mongo_uri = std::env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
     let redis_uri = std::env::var("REDIS_URI").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let pg_uri = std::env::var("POSTGRES_URI").ok();
     
-    let db = DatabaseConnection::new(&mongo_uri, &redis_uri, "abook")
+    let db = DatabaseConnection::new(&mongo_uri, &redis_uri, pg_uri.as_deref(), "abook")
         .await
         .expect("Failed to connect to database");
     

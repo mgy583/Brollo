@@ -1,7 +1,7 @@
 ﻿version: '3.8'
 
 services:
-  # MongoDB 数据库
+  # MongoDB 锟斤拷锟捷匡拷
   mongodb:
     image: mongo:7.0
     container_name: abook-mongodb
@@ -23,7 +23,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis 缓存
+  # Redis 锟斤拷锟斤拷
   redis:
     image: redis:7-alpine
     container_name: abook-redis
@@ -40,7 +40,29 @@ services:
       timeout: 5s
       retries: 5
 
-  # 用户服务
+  # TimescaleDB (PostgreSQL)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: abook-timescaledb
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: abook
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./init-timescaledb.sql:/docker-entrypoint-initdb.d/init-timescaledb.sql:ro
+    networks:
+      - abook-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d abook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 锟矫伙拷锟斤拷锟斤拷
   user-service:
     build:
       context: ./backend
@@ -52,6 +74,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -61,10 +84,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 账户服务
+  # 锟剿伙拷锟斤拷锟斤拷
   account-service:
     build:
       context: ./backend
@@ -76,6 +101,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -85,10 +111,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 交易服务
+  # 锟斤拷锟阶凤拷锟斤拷
   transaction-service:
     build:
       context: ./backend
@@ -100,6 +128,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -109,10 +138,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 预算服务
+  # 预锟斤拷锟斤拷锟?
   budget-service:
     build:
       context: ./backend
@@ -124,6 +155,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -133,10 +165,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 报表服务
+  # 锟斤拷锟斤拷锟斤拷锟斤拷
   report-service:
     build:
       context: ./backend
@@ -148,6 +182,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -157,10 +192,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 汇率服务
+  # 锟斤拷锟绞凤拷锟斤拷
   quote-service:
     build:
       context: ./backend
@@ -172,6 +209,7 @@ services:
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
       REDIS_URI: redis://redis:6379
+      POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
@@ -181,10 +219,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
     networks:
       - abook-network
 
-  # 前端服务
+  # 前锟剿凤拷锟斤拷
   frontend:
     build:
       context: ./frontend
@@ -210,3 +250,4 @@ networks:
 volumes:
   mongodb_data:
   redis_data:
+  timescaledb_data:
