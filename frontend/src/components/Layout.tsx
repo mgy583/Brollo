@@ -58,7 +58,6 @@ export default function Layout() {
       <AntLayout>
         <Header style={{ background: 'transparent', padding: '8px 16px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Space size="middle">
-            <span style={{ color: 'var(--element-blue)', fontWeight: 600 }}>Element 主题</span>
             <Button type="default" onClick={() => navigate('/settings')}>个人设置</Button>
             <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>登出</Button>
           </Space>
