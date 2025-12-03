@@ -24,6 +24,9 @@ export default function Layout() {
     <AntLayout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} theme="light" style={{ boxShadow: '2px 0 6px rgba(0,0,0,0.04)' }}>
         <div style={{ padding: 16, textAlign: 'center' }}>
+          <div style={{ marginBottom: 12, fontSize: 20, fontWeight: 'bold', color: '#1890ff' }}>
+            {collapsed ? 'B' : 'Brollo'}
+          </div>
           <div style={{ display: 'inline-block', background: '#fff', padding: 8, borderRadius: 8 }}>
             <Avatar size={48} src={user?.avatar}>
               {user?.username?.[0]?.toUpperCase()}
