@@ -2,7 +2,7 @@ use axum::{
     extract::{Query, State, Extension},
     Json,
 };
-use common::{Transaction, ApiResponse, Claims, Result};
+use common::{Transaction, ApiResponse, Claims, Result, get_category_name};
 use mongodb::bson::doc;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -160,7 +160,7 @@ pub async fn category_report(
             };
             
             CategoryReport {
-                category_name: category_id.clone(),
+                category_name: get_category_name(&category_id),
                 category_id,
                 amount,
                 percentage,

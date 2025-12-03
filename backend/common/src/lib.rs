@@ -5,6 +5,7 @@ pub mod response;
 pub mod algorithms;
 pub mod db;
 pub mod middleware;
+pub mod constants;
 
 pub use error::{Error, Result};
 pub use models::*;
@@ -13,3 +14,4 @@ pub use response::*;
 pub use algorithms::*;
 pub use db::*;
 pub use middleware::*;
+pub use constants::*;

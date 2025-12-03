@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State, Extension},
     Json,
 };
-use common::{Transaction, Category, Budget, ApiResponse, PaginationResponse, PaginationMeta, Claims, Error, Result};
+use common::{Transaction, Category, Budget, Account, ApiResponse, PaginationResponse, PaginationMeta, Claims, Error, Result};
 use mongodb::{bson::{self, doc, oid::ObjectId}, options::FindOptions};
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -131,6 +131,7 @@ pub async fn create_transaction(
     let amount_for_update = req.amount;
     let user_id_for_update = claims.user_id.clone();
     let transaction_date_for_update = transaction_date;
+    let account_id_for_update = req.account_id.clone();
 
     let transaction = Transaction {
         id: Some(ObjectId::new().to_hex()),
@@ -185,6 +186,27 @@ pub async fn create_transaction(
                 None
             ).await?;
         }
+    }
+
+    // Update account balance
+    let accounts_collection = state.db.mongo.collection::<Account>("accounts");
+    if let Some(mut account) = accounts_collection.find_one(doc! { "_id": &account_id_for_update, "user_id": &user_id_for_update }, None).await? {
+        match transaction_type_for_update.as_str() {
+            "expense" => {
+                account.current_balance -= amount_for_update;
+            },
+            "income" => {
+                account.current_balance += amount_for_update;
+            },
+            _ => {}
+        }
+        account.updated_at = chrono::Utc::now();
+        
+        accounts_collection.replace_one(
+            doc! { "_id": &account_id_for_update },
+            account,
+            None
+        ).await?;
     }
     
     Ok(Json(ApiResponse::success(transaction)))
