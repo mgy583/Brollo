@@ -18,7 +18,7 @@ export const useThemeStore = create<ThemeState>()(
       toggle: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
     }),
     {
-      name: 'abook-theme',
+      name: 'brollo-theme',
     }
   )
 )

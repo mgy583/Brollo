@@ -1,27 +1,29 @@
-import { Card, DatePicker, Space, Statistic, Table } from 'antd'
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import { DatePicker, Space, Statistic, Table, Button, Switch, Typography } from 'antd'
+import { ArrowUpOutlined, ArrowDownOutlined, DragOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts'
+import ReactECharts from 'echarts-for-react'
 import { Responsive, WidthProvider } from 'react-grid-layout'
 import dayjs from 'dayjs'
 import api from '../utils/api'
 import { EXPENSE_CATEGORIES } from '../utils/constants'
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#4ECDC4', '#45B7D1']
 const { RangePicker } = DatePicker
+const { Text } = Typography
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
-const LAYOUT_STORAGE_KEY = 'abook_reports_layout_v1'
+const LAYOUT_STORAGE_KEY = 'brollo_reports_layout_v2'
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState<any>([dayjs().startOf('month'), dayjs().endOf('month')])
+  const [isEditing, setIsEditing] = useState(false)
+  
   const defaultLayout = [
-    { i: 'trend', x: 0, y: 0, w: 6, h: 8 },
-    { i: 'pie', x: 6, y: 0, w: 6, h: 8 },
-    { i: 'bar', x: 0, y: 8, w: 12, h: 8 },
-    { i: 'table', x: 0, y: 16, w: 12, h: 8 },
-    { i: 'stats', x: 0, y: 24, w: 12, h: 4 },
+    { i: 'trend', x: 0, y: 0, w: 8, h: 10 },
+    { i: 'pie', x: 8, y: 0, w: 4, h: 10 },
+    { i: 'bar', x: 0, y: 10, w: 12, h: 8 },
+    { i: 'table', x: 0, y: 18, w: 12, h: 8 },
+    { i: 'stats', x: 0, y: 26, w: 12, h: 4 },
   ]
 
   const [layout, setLayout] = useState<any[]>(() => {
@@ -108,11 +110,84 @@ export default function Reports() {
     setLayout(newLayout)
   }
 
+  const resetLayout = () => {
+    setLayout(defaultLayout)
+  }
+
+  // ECharts Options
+  const trendOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['收入', '支出'], bottom: 0 },
+    grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+    xAxis: { type: 'category', boundaryGap: false, data: trendChartData.map((d: any) => d.date) },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        name: '收入',
+        type: 'line',
+        smooth: true,
+        data: trendChartData.map((d: any) => d.income),
+        itemStyle: { color: '#52c41a' },
+        areaStyle: { opacity: 0.1, color: '#52c41a' }
+      },
+      {
+        name: '支出',
+        type: 'line',
+        smooth: true,
+        data: trendChartData.map((d: any) => d.expense),
+        itemStyle: { color: '#f5222d' },
+        areaStyle: { opacity: 0.1, color: '#f5222d' }
+      }
+    ]
+  }
+
+  const pieOption = {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, left: 'center' },
+    series: [
+      {
+        name: '支出分类',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false, position: 'center' },
+        emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
+        labelLine: { show: false },
+        data: categoryChartData
+      }
+    ]
+  }
+
+  const barOption = {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: categoryChartData.map((d: any) => d.name), axisLabel: { interval: 0, rotate: 30 } },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        name: '支出金额',
+        type: 'bar',
+        data: categoryChartData.map((d: any) => d.value),
+        itemStyle: { color: '#1890ff', borderRadius: [5, 5, 0, 0] },
+        showBackground: true,
+        backgroundStyle: { color: 'rgba(180, 180, 180, 0.2)' }
+      }
+    ]
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>报表分析</h1>
         <Space>
+          <Space>
+            <Text>自定义布局</Text>
+            <Switch checked={isEditing} onChange={setIsEditing} checkedChildren="开启" unCheckedChildren="关闭" />
+          </Space>
+          {isEditing && (
+            <Button icon={<ReloadOutlined />} onClick={resetLayout}>重置布局</Button>
+          )}
           <RangePicker 
             value={dateRange}
             onChange={(dates) => dates && setDateRange(dates)}
@@ -129,84 +204,68 @@ export default function Reports() {
         rowHeight={30}
         onLayoutChange={onLayoutChange}
         draggableHandle=".drag-handle"
+        isDraggable={isEditing}
+        isResizable={isEditing}
+        margin={[16, 16]}
       >
-        <div key="trend" data-grid={layout.find(l=>l.i==='trend') || {x:0,y:0,w:6,h:8}}>
-          <Card title={<span className="drag-handle">收支趋势</span>} style={{ height: '100%' }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trendChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="income" stroke="#3f8600" name="收入" />
-                <Line type="monotone" dataKey="expense" stroke="#cf1322" name="支出" />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+        <div key="trend" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div className="drag-handle" style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: isEditing ? 'move' : 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>收支趋势</span>
+            {isEditing && <DragOutlined style={{ color: '#999' }} />}
+          </div>
+          <div style={{ padding: 16, height: 'calc(100% - 47px)' }}>
+            <ReactECharts option={trendOption} style={{ height: '100%', width: '100%' }} />
+          </div>
         </div>
 
-        <div key="pie" data-grid={layout.find(l=>l.i==='pie') || {x:6,y:0,w:6,h:8}}>
-          <Card title={<span className="drag-handle">分类支出占比</span>} style={{ height: '100%' }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryChartData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={(entry) => `${entry.name}: ${entry.value.toFixed(0)}`}
-                >
-                  {categoryChartData.map((_entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
+        <div key="pie" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div className="drag-handle" style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: isEditing ? 'move' : 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>分类支出占比</span>
+            {isEditing && <DragOutlined style={{ color: '#999' }} />}
+          </div>
+          <div style={{ padding: 16, height: 'calc(100% - 47px)' }}>
+            <ReactECharts option={pieOption} style={{ height: '100%', width: '100%' }} />
+          </div>
         </div>
 
-        <div key="bar" data-grid={layout.find(l=>l.i==='bar') || {x:0,y:8,w:12,h:8}}>
-          <Card title={<span className="drag-handle">分类统计对比</span>} style={{ height: '100%' }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#8884d8" name="支出金额">
-                  {categoryChartData.map((_entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+        <div key="bar" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div className="drag-handle" style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: isEditing ? 'move' : 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>分类统计对比</span>
+            {isEditing && <DragOutlined style={{ color: '#999' }} />}
+          </div>
+          <div style={{ padding: 16, height: 'calc(100% - 47px)' }}>
+            <ReactECharts option={barOption} style={{ height: '100%', width: '100%' }} />
+          </div>
         </div>
 
-        <div key="table" data-grid={layout.find(l=>l.i==='table') || {x:0,y:16,w:12,h:8}}>
-          <Card title={<span className="drag-handle">分类详细统计</span>} style={{ height: '100%' }}>
+        <div key="table" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div className="drag-handle" style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: isEditing ? 'move' : 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>分类详细统计</span>
+            {isEditing && <DragOutlined style={{ color: '#999' }} />}
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
             <Table
               columns={categoryTableColumns}
               dataSource={Array.isArray(categoryData?.data) ? categoryData.data : []}
               rowKey="category_id"
               pagination={false}
+              size="small"
             />
-          </Card>
+          </div>
         </div>
 
-        <div key="stats" data-grid={layout.find(l=>l.i==='stats') || {x:0,y:24,w:12,h:4}}>
-          <Card title={<span className="drag-handle">关键指标</span>}>
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Statistic title="总收入" value={`¥${totalIncome.toFixed(2)}`} prefix={<ArrowUpOutlined />} />
-              <Statistic title="总支出" value={`¥${totalExpense.toFixed(2)}`} prefix={<ArrowDownOutlined />} />
-              <Statistic title="净收入" value={`¥${netIncome.toFixed(2)}`} />
+        <div key="stats" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div className="drag-handle" style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: isEditing ? 'move' : 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>关键指标</span>
+            {isEditing && <DragOutlined style={{ color: '#999' }} />}
+          </div>
+          <div style={{ padding: 24 }}>
+            <Space style={{ width: '100%', justifyContent: 'space-around' }}>
+              <Statistic title="总收入" value={`¥${totalIncome.toFixed(2)}`} prefix={<ArrowUpOutlined />} valueStyle={{ color: '#3f8600' }} />
+              <Statistic title="总支出" value={`¥${totalExpense.toFixed(2)}`} prefix={<ArrowDownOutlined />} valueStyle={{ color: '#cf1322' }} />
+              <Statistic title="净收入" value={`¥${netIncome.toFixed(2)}`} valueStyle={{ color: netIncome >= 0 ? '#3f8600' : '#cf1322' }} />
             </Space>
-          </Card>
+          </div>
         </div>
       </ResponsiveGridLayout>
     </div>
