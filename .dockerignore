@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 文档
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+pids/
+
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm
+dist/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 备份
+*.bak
+*.backup

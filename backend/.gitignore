@@ -1,0 +1,11 @@
+target/
+Cargo.lock
+*.pdb
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local

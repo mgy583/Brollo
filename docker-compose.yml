@@ -1,0 +1,212 @@
+﻿version: '3.8'
+
+services:
+  # MongoDB 数据库
+  mongodb:
+    image: mongo:7.0
+    container_name: abook-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: abook
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - abook-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: abook-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - abook-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 用户服务
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: user-service
+    container_name: abook-user-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 账户服务
+  account-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: account-service
+    container_name: abook-account-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 交易服务
+  transaction-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: transaction-service
+    container_name: abook-transaction-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3002:3002"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 预算服务
+  budget-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: budget-service
+    container_name: abook-budget-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3003:3003"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 报表服务
+  report-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: report-service
+    container_name: abook-report-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3004:3004"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 汇率服务
+  quote-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: quote-service
+    container_name: abook-quote-service
+    restart: always
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/abook?authSource=admin
+      REDIS_URI: redis://redis:6379
+      RUST_LOG: info
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "3005:3005"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abook-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: abook-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - account-service
+      - transaction-service
+      - budget-service
+      - report-service
+      - quote-service
+    networks:
+      - abook-network
+
+networks:
+  abook-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:

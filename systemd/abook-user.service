@@ -1,0 +1,19 @@
+[Unit]
+Description=ABook User Service
+After=network.target mongod.service redis.service
+Requires=mongod.service redis.service
+
+[Service]
+Type=simple
+User=your-user
+Group=your-group
+WorkingDirectory=/path/to/abook/backend
+Environment="MONGO_URI=mongodb://localhost:27017"
+Environment="REDIS_URI=redis://localhost:6379"
+Environment="RUST_LOG=info"
+ExecStart=/path/to/abook/backend/target/release/user-service
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+[package]
+name = "account-service"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../../common" }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+mongodb = { workspace = true }
+redis = { workspace = true }
+deadpool-redis = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+config = { workspace = true }
+dotenvy = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+rstest = { workspace = true }
