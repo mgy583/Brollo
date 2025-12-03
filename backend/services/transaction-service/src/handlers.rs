@@ -33,6 +33,18 @@ pub struct CreateTransactionRequest {
     pub status: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateTransactionRequest {
+    pub transaction_type: Option<String>,
+    pub amount: f64,
+    pub currency: Option<String>,
+    pub account_id: Option<String>,
+    pub category_id: String,
+    pub description: Option<String>,
+    pub transaction_date: String,
+    pub status: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct ListQuery {
     #[serde(default = "default_page")]
@@ -165,21 +177,41 @@ pub async fn update_transaction(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
-    Json(transaction): Json<Transaction>,
+    Json(req): Json<UpdateTransactionRequest>,
 ) -> Result<Json<ApiResponse<Transaction>>> {
+    use chrono::DateTime;
+    
     let oid = ObjectId::parse_str(&id)
         .map_err(|_| Error::InvalidInput("Invalid transaction ID".to_string()))?;
     
+    let transaction_date = DateTime::parse_from_rfc3339(&req.transaction_date)
+        .map_err(|_| Error::InvalidInput("Invalid date format".to_string()))?
+        .with_timezone(&chrono::Utc);
+    
     let collection = state.db.mongo.collection::<Transaction>("transactions");
     
-    let update_doc = doc! {
-        "$set": {
-            "amount": transaction.amount,
-            "category_id": &transaction.category_id,
-            "description": &transaction.description,
-            "transaction_date": bson::to_bson(&transaction.transaction_date).unwrap(),
-        }
+    let mut update_fields = doc! {
+        "amount": req.amount,
+        "category_id": &req.category_id,
+        "description": req.description.unwrap_or_default(),
+        "transaction_date": bson::to_bson(&transaction_date).unwrap(),
+        "updated_at": mongodb::bson::to_bson(&chrono::Utc::now()).unwrap(),
     };
+    
+    if let Some(transaction_type) = &req.transaction_type {
+        update_fields.insert("transaction_type", transaction_type);
+    }
+    if let Some(currency) = &req.currency {
+        update_fields.insert("currency", currency);
+    }
+    if let Some(account_id) = &req.account_id {
+        update_fields.insert("account_id", account_id);
+    }
+    if let Some(status) = &req.status {
+        update_fields.insert("status", status);
+    }
+    
+    let update_doc = doc! { "$set": update_fields };
     
     collection
         .update_one(doc! { "_id": oid, "user_id": &claims.user_id }, update_doc, None)

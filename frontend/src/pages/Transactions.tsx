@@ -1,5 +1,5 @@
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Popconfirm, Space } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -7,6 +7,7 @@ import api from '../utils/api'
 
 export default function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<any>(null)
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
@@ -33,12 +34,77 @@ export default function Transactions() {
     },
   })
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: any) => api.put(`/transactions/${id}`, values),
+    onSuccess: () => {
+      message.success('更新成功')
+      setIsModalOpen(false)
+      setEditingTransaction(null)
+      form.resetFields()
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.error || '更新失败')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/transactions/${id}`),
+    onSuccess: () => {
+      message.success('删除成功')
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.error || '删除失败')
+    },
+  })
+
+  const handleEdit = (record: any) => {
+    setEditingTransaction(record)
+    form.setFieldsValue({
+      account_id: record.account_id,
+      transaction_type: record.transaction_type,
+      amount: record.amount,
+      currency: record.currency,
+      date: dayjs(record.transaction_date),
+      category_id: record.category_id,
+      description: record.description,
+      status: record.status,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
   const columns = [
     { title: '日期', dataIndex: 'transaction_date', key: 'transaction_date', render: (val: string) => dayjs(val).format('YYYY-MM-DD') },
     { title: '类型', dataIndex: 'transaction_type', key: 'transaction_type' },
     { title: '金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${val.toFixed(2)}` },
     { title: '分类', dataIndex: 'category_id', key: 'category_id' },
     { title: '描述', dataIndex: 'description', key: 'description' },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: any) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
+          <Popconfirm
+            title="确定要删除这条交易吗？"
+            onConfirm={() => handleDelete(record._id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ]
 
   const accounts = accountsData?.data?.items || []
@@ -51,10 +117,21 @@ export default function Transactions() {
       amount: parseFloat(values.amount),
       currency: values.currency || 'CNY',
       transaction_date: values.date.toISOString(),
-      status: 'completed',
+      status: values.status || 'completed',
       description: values.description,
     }
-    createMutation.mutate(data)
+    
+    if (editingTransaction) {
+      updateMutation.mutate({ id: editingTransaction._id, values: data })
+    } else {
+      createMutation.mutate(data)
+    }
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setEditingTransaction(null)
+    form.resetFields()
   }
 
   return (
@@ -79,9 +156,9 @@ export default function Transactions() {
       />
 
       <Modal
-        title="新建交易"
+        title={editingTransaction ? '编辑交易' : '新建交易'}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={handleModalClose}
         footer={null}
       >
         <Form form={form} onFinish={handleSubmit} layout="vertical">
@@ -120,9 +197,18 @@ export default function Transactions() {
           <Form.Item label="描述" name="description">
             <Input.TextArea />
           </Form.Item>
+          {editingTransaction && (
+            <Form.Item label="状态" name="status">
+              <Select>
+                <Select.Option value="pending">待处理</Select.Option>
+                <Select.Option value="completed">已完成</Select.Option>
+                <Select.Option value="cancelled">已取消</Select.Option>
+              </Select>
+            </Form.Item>
+          )}
           <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={createMutation.isPending}>
-              创建
+            <Button type="primary" htmlType="submit" block loading={createMutation.isPending || updateMutation.isPending}>
+              {editingTransaction ? '更新' : '创建'}
             </Button>
           </Form.Item>
         </Form>

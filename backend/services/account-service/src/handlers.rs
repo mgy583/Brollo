@@ -22,6 +22,16 @@ pub struct CreateAccountRequest {
     pub status: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateAccountRequest {
+    pub name: String,
+    pub account_type: String,
+    pub currency: String,
+    pub status: Option<String>,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct ListQuery {
     #[serde(default = "default_page")]
@@ -97,11 +107,9 @@ pub async fn get_account(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<Account>>> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| Error::InvalidInput("Invalid account ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Account>("accounts");
     let account = collection
-        .find_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .find_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Account not found".to_string()))?;
     
@@ -112,26 +120,35 @@ pub async fn update_account(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
-    Json(account): Json<Account>,
+    Json(req): Json<UpdateAccountRequest>,
 ) -> Result<Json<ApiResponse<Account>>> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| Error::InvalidInput("Invalid account ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Account>("accounts");
-    let update_doc = doc! {
-        "$set": {
-            "name": &account.name,
-            "account_type": &account.account_type,
-            "currency": &account.currency,
-            "icon": &account.icon,
-        }
+    
+    let mut update_fields = doc! {
+        "name": &req.name,
+        "account_type": &req.account_type,
+        "currency": &req.currency,
+        "updated_at": mongodb::bson::to_bson(&chrono::Utc::now()).unwrap(),
     };
     
+    if let Some(status) = &req.status {
+        update_fields.insert("status", status);
+    }
+    if let Some(icon) = &req.icon {
+        update_fields.insert("icon", icon);
+    }
+    if let Some(color) = &req.color {
+        update_fields.insert("color", color);
+    }
+    
+    let update_doc = doc! { "$set": update_fields };
+    
     collection
-        .update_one(doc! { "_id": oid, "user_id": &claims.user_id }, update_doc, None)
+        .update_one(doc! { "_id": &id, "user_id": &claims.user_id }, update_doc, None)
         .await?;
     
     let updated = collection
-        .find_one(doc! { "_id": oid }, None)
+        .find_one(doc! { "_id": &id }, None)
         .await?
         .ok_or_else(|| Error::NotFound("Account not found".to_string()))?;
     
@@ -143,11 +160,9 @@ pub async fn delete_account(
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<ApiResponse<()>>> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| Error::InvalidInput("Invalid account ID".to_string()))?;
-    
     let collection = state.db.mongo.collection::<Account>("accounts");
     let result = collection
-        .delete_one(doc! { "_id": oid, "user_id": &claims.user_id }, None)
+        .delete_one(doc! { "_id": &id, "user_id": &claims.user_id }, None)
         .await?;
     
     if result.deleted_count == 0 {

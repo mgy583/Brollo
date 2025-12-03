@@ -1,39 +1,213 @@
-import { Table, Card, Progress } from 'antd'
-import { useQuery } from '@tanstack/react-query'
+import { Table, Card, Progress, Button, Modal, Form, Input, Select, DatePicker, message, Popconfirm, Space } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import api from '../utils/api'
 
 export default function Budgets() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<any>(null)
+  const [form] = Form.useForm()
+  const queryClient = useQueryClient()
+
   const { data, isLoading } = useQuery({
     queryKey: ['budgets'],
     queryFn: () => api.get('/budgets'),
   })
 
+  const createMutation = useMutation({
+    mutationFn: (values: any) => api.post('/budgets', values),
+    onSuccess: () => {
+      message.success('创建成功')
+      setIsModalOpen(false)
+      form.resetFields()
+      queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.error || '创建失败')
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: any) => api.put(`/budgets/${id}`, values),
+    onSuccess: () => {
+      message.success('更新成功')
+      setIsModalOpen(false)
+      setEditingBudget(null)
+      form.resetFields()
+      queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.error || '更新失败')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/budgets/${id}`),
+    onSuccess: () => {
+      message.success('删除成功')
+      queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.error || '删除失败')
+    },
+  })
+
+  const handleEdit = (record: any) => {
+    setEditingBudget(record)
+    form.setFieldsValue({
+      category_id: record.category_id,
+      amount: record.amount,
+      period: record.period,
+      start_date: dayjs(record.start_date),
+      end_date: dayjs(record.end_date),
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id)
+  }
+
+  const handleSubmit = (values: any) => {
+    const data = {
+      category_id: values.category_id,
+      amount: parseFloat(values.amount),
+      period: values.period,
+      start_date: values.start_date.toISOString(),
+      end_date: values.end_date.toISOString(),
+    }
+
+    if (editingBudget) {
+      updateMutation.mutate({ id: editingBudget._id, values: data })
+    } else {
+      createMutation.mutate(data)
+    }
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setEditingBudget(null)
+    form.resetFields()
+  }
+
   const columns = [
-    { title: '分类', dataIndex: 'category_id', key: 'category_id' },
-    { title: '预算金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${val.toFixed(2)}` },
-    { title: '已使用', dataIndex: 'spent', key: 'spent', render: (val: number) => `¥${val.toFixed(2)}` },
+    { title: '分类ID', dataIndex: 'category_id', key: 'category_id' },
+    { title: '预算金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${val?.toFixed(2) || '0.00'}` },
+    { title: '已使用', dataIndex: 'spent', key: 'spent', render: (val: number) => `¥${val?.toFixed(2) || '0.00'}` },
     {
       title: '使用率',
       key: 'progress',
       render: (record: any) => {
-        const percent = (record.spent / record.amount) * 100
+        const amount = record.amount || 0
+        const spent = record.spent || 0
+        const percent = amount > 0 ? (spent / amount) * 100 : 0
         return <Progress percent={Math.round(percent)} status={percent > 80 ? 'exception' : 'normal'} />
       },
     },
     { title: '周期', dataIndex: 'period', key: 'period' },
+    { title: '开始日期', dataIndex: 'start_date', key: 'start_date', render: (val: string) => dayjs(val).format('YYYY-MM-DD') },
+    { title: '结束日期', dataIndex: 'end_date', key: 'end_date', render: (val: string) => dayjs(val).format('YYYY-MM-DD') },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: any) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
+          <Popconfirm
+            title="确定要删除这个预算吗？"
+            onConfirm={() => handleDelete(record._id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ]
 
   return (
     <div>
-      <h1>预算管理</h1>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>预算管理</h1>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          新建预算
+        </Button>
+      </div>
 
-      <Card title="预算列表" style={{ marginTop: 16 }}>
+      <Card title="预算列表">
         <Table
           columns={columns}
-          dataSource={data?.data?.data || []}
+          dataSource={data?.data?.items || []}
           loading={isLoading}
           rowKey="_id"
+          pagination={{
+            total: data?.data?.pagination?.total || 0,
+            pageSize: data?.data?.pagination?.page_size || 10,
+            current: data?.data?.pagination?.page || 1,
+          }}
         />
+      </Card>
+
+      <Modal
+        title={editingBudget ? '编辑预算' : '新建预算'}
+        open={isModalOpen}
+        onCancel={handleModalClose}
+        footer={null}
+        width={600}
+      >
+        <Form form={form} onFinish={handleSubmit} layout="vertical">
+          <Form.Item label="分类ID" name="category_id" rules={[{ required: true }]}>
+            <Input placeholder="例如: 000000000000000000000001" />
+          </Form.Item>
+          <Form.Item label="预算金额" name="amount" rules={[{ required: true }]}>
+            <Input type="number" prefix="¥" />
+          </Form.Item>
+          <Form.Item label="周期" name="period" rules={[{ required: true }]}>
+            <Select>
+              <Select.Option value="daily">每日</Select.Option>
+              <Select.Option value="weekly">每周</Select.Option>
+              <Select.Option value="monthly">每月</Select.Option>
+              <Select.Option value="yearly">每年</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="开始日期" name="start_date" rules={[{ required: true }]}>
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="结束日期" name="end_date" rules={[{ required: true }]}>
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block loading={createMutation.isPending || updateMutation.isPending}>
+              {editingBudget ? '更新' : '创建'}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Card title="预算说明" style={{ marginTop: 16 }}>
+        <p><strong>什么是预算？</strong></p>
+        <p>预算功能帮助您控制某个分类的支出，避免超支。</p>
+        <p><strong>如何使用：</strong></p>
+        <ul>
+          <li>1. 点击"新建预算"按钮</li>
+          <li>2. 选择要控制的分类（如"餐饮"、"购物"等）</li>
+          <li>3. 设置预算金额（例如每月1000元）</li>
+          <li>4. 选择预算周期（每日/每周/每月/每年）</li>
+          <li>5. 设置预算的起止日期</li>
+        </ul>
+        <p><strong>预算监控：</strong></p>
+        <ul>
+          <li>系统会自动统计该分类下的支出</li>
+          <li>使用率超过80%时会显示为红色警告</li>
+          <li>帮助您及时发现并控制超支风险</li>
+        </ul>
       </Card>
     </div>
   )

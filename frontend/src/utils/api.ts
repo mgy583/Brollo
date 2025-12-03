@@ -25,7 +25,11 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const response = await axios.post('/api/refresh', { refresh_token: refreshToken })
-          const { access_token } = response.data
+          // Backend returns {success: true, data: "new_access_token"}
+          const access_token = response.data.data || response.data.access_token
+          if (!access_token) {
+            throw new Error('No access token in refresh response')
+          }
           useAuthStore.getState().login(
             useAuthStore.getState().user!,
             access_token,
@@ -35,9 +39,11 @@ api.interceptors.response.use(
           return axios.request(error.config)
         } catch {
           useAuthStore.getState().logout()
+          window.location.href = '/login'
         }
       } else {
         useAuthStore.getState().logout()
+        window.location.href = '/login'
       }
     }
     return Promise.reject(error)

@@ -5,9 +5,18 @@ use axum::{
 use common::{Budget, Transaction, ApiResponse, PaginationResponse, PaginationMeta, Claims, Error, Result, BudgetPredictor, PredictionResult};
 use mongodb::{bson::{self, doc, oid::ObjectId}, options::FindOptions};
 use std::sync::Arc;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::AppState;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateBudgetRequest {
+    pub category_id: String,
+    pub amount: f64,
+    pub period: String,
+    pub start_date: String,
+    pub end_date: String,
+}
 
 #[derive(Deserialize)]
 pub struct ListQuery {
@@ -84,21 +93,31 @@ pub async fn update_budget(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
-    Json(budget): Json<Budget>,
+    Json(req): Json<UpdateBudgetRequest>,
 ) -> Result<Json<ApiResponse<Budget>>> {
+    use chrono::DateTime;
+    
     let oid = ObjectId::parse_str(&id)
         .map_err(|_| Error::InvalidInput("Invalid budget ID".to_string()))?;
+    
+    let start_date = DateTime::parse_from_rfc3339(&req.start_date)
+        .map_err(|_| Error::InvalidInput("Invalid start date format".to_string()))?
+        .with_timezone(&chrono::Utc);
+    
+    let end_date = DateTime::parse_from_rfc3339(&req.end_date)
+        .map_err(|_| Error::InvalidInput("Invalid end date format".to_string()))?
+        .with_timezone(&chrono::Utc);
     
     let collection = state.db.mongo.collection::<Budget>("budgets");
     
     let update_doc = doc! {
         "$set": {
-            "category_ids": &budget.category_ids,
-            "amount": budget.amount,
-            "budget_type": &budget.budget_type,
-            "start_date": bson::to_bson(&budget.start_date).unwrap(),
-            "end_date": bson::to_bson(&budget.end_date).unwrap(),
-            "alert_thresholds": bson::to_bson(&budget.alert_thresholds).unwrap(),
+            "category_ids": vec![&req.category_id],
+            "amount": req.amount,
+            "budget_type": &req.period,
+            "start_date": bson::to_bson(&start_date).unwrap(),
+            "end_date": bson::to_bson(&end_date).unwrap(),
+            "updated_at": mongodb::bson::to_bson(&chrono::Utc::now()).unwrap(),
         }
     };
     
