@@ -7,6 +7,21 @@ import api from '../utils/api'
 
 const { RangePicker } = DatePicker
 
+// 预定义分类（通常预算只针对支出分类）
+const EXPENSE_CATEGORIES = [
+  { value: 'shopping', label: '购物' },
+  { value: 'transport', label: '交通' },
+  { value: 'dining', label: '餐饮' },
+  { value: 'entertainment', label: '娱乐' },
+  { value: 'housing', label: '居住' },
+  { value: 'healthcare', label: '医疗' },
+  { value: 'education', label: '教育' },
+  { value: 'utilities', label: '水电煤' },
+  { value: 'communication', label: '通讯' },
+  { value: 'clothing', label: '服饰' },
+  { value: 'other_expense', label: '其他支出' }
+]
+
 export default function Budgets() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<any>(null)
@@ -97,7 +112,15 @@ export default function Budgets() {
   }
 
   const columns = [
-    { title: '分类ID', dataIndex: 'category_id', key: 'category_id' },
+    { 
+      title: '分类', 
+      dataIndex: 'category_id', 
+      key: 'category_id',
+      render: (val: string) => {
+        const category = EXPENSE_CATEGORIES.find(c => c.value === val)
+        return category ? category.label : val
+      }
+    },
     { title: '预算金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${val?.toFixed(2) || '0.00'}` },
     { title: '已使用', dataIndex: 'spent', key: 'spent', render: (val: number) => `¥${val?.toFixed(2) || '0.00'}` },
     {
@@ -206,8 +229,12 @@ export default function Budgets() {
         width={600}
       >
         <Form form={form} onFinish={handleSubmit} layout="vertical">
-          <Form.Item label="分类ID" name="category_id" rules={[{ required: true }]}>
-            <Input placeholder="例如: 000000000000000000000001" />
+          <Form.Item label="分类" name="category_id" rules={[{ required: true, message: '请选择分类' }]}>
+            <Select placeholder="选择分类">
+              {EXPENSE_CATEGORIES.map(cat => (
+                <Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item label="预算金额" name="amount" rules={[{ required: true }]}>
             <Input type="number" prefix="¥" />

@@ -7,6 +7,32 @@ import api from '../utils/api'
 
 const { RangePicker } = DatePicker
 
+// 预定义分类
+const EXPENSE_CATEGORIES = [
+  { value: 'shopping', label: '购物' },
+  { value: 'transport', label: '交通' },
+  { value: 'dining', label: '餐饮' },
+  { value: 'entertainment', label: '娱乐' },
+  { value: 'housing', label: '居住' },
+  { value: 'healthcare', label: '医疗' },
+  { value: 'education', label: '教育' },
+  { value: 'utilities', label: '水电煤' },
+  { value: 'communication', label: '通讯' },
+  { value: 'clothing', label: '服饰' },
+  { value: 'other_expense', label: '其他支出' }
+]
+
+const INCOME_CATEGORIES = [
+  { value: 'salary', label: '工资' },
+  { value: 'investment', label: '投资收益' },
+  { value: 'bonus', label: '奖金' },
+  { value: 'gift', label: '礼金' },
+  { value: 'refund', label: '退款' },
+  { value: 'other_income', label: '其他收入' }
+]
+
+const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]
+
 export default function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
@@ -86,7 +112,15 @@ export default function Transactions() {
     { title: '日期', dataIndex: 'transaction_date', key: 'transaction_date', render: (val: string) => dayjs(val).format('YYYY-MM-DD') },
     { title: '类型', dataIndex: 'transaction_type', key: 'transaction_type' },
     { title: '金额', dataIndex: 'amount', key: 'amount', render: (val: number) => `¥${val.toFixed(2)}` },
-    { title: '分类', dataIndex: 'category_id', key: 'category_id' },
+    { 
+      title: '分类', 
+      dataIndex: 'category_id', 
+      key: 'category_id',
+      render: (val: string) => {
+        const category = ALL_CATEGORIES.find(c => c.value === val)
+        return category ? category.label : val
+      }
+    },
     { title: '描述', dataIndex: 'description', key: 'description' },
     {
       title: '操作',
@@ -183,7 +217,11 @@ export default function Transactions() {
             </Select>
           </Form.Item>
           <Form.Item name="category_id" label="分类">
-            <Input placeholder="输入分类ID" style={{ width: 150 }} />
+            <Select placeholder="选择分类" style={{ width: 150 }} allowClear>
+              {ALL_CATEGORIES.map(cat => (
+                <Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item name="dateRange" label="日期范围">
             <RangePicker />
@@ -247,8 +285,19 @@ export default function Transactions() {
           <Form.Item label="日期" name="date" initialValue={dayjs()} rules={[{ required: true }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="分类ID" name="category_id" rules={[{ required: true }]}>
-            <Input placeholder="例如: 000000000000000000000001" />
+          <Form.Item label="分类" name="category_id" rules={[{ required: true, message: '请选择分类' }]}>
+            <Select placeholder="选择分类">
+              <Select.OptGroup label="支出分类">
+                {EXPENSE_CATEGORIES.map(cat => (
+                  <Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+                ))}
+              </Select.OptGroup>
+              <Select.OptGroup label="收入分类">
+                {INCOME_CATEGORIES.map(cat => (
+                  <Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+                ))}
+              </Select.OptGroup>
+            </Select>
           </Form.Item>
           <Form.Item label="描述" name="description">
             <Input.TextArea />
