@@ -38,30 +38,68 @@ export default function Login() {
           theme={{
             algorithm: theme.darkAlgorithm,
             token: {
-              colorBgContainer: 'rgba(0, 0, 0, 0.6)',
-              colorBorder: 'rgba(255, 255, 255, 0.1)',
+              colorBgContainer: 'rgba(20, 20, 20, 0.95)',
+              colorBorder: 'rgba(255, 255, 255, 0.15)',
+              colorText: '#fff',
+              colorTextPlaceholder: 'rgba(255, 255, 255, 0.4)',
+            },
+            components: {
+              Input: {
+                activeBorderColor: 'rgba(255, 255, 255, 0.3)',
+                hoverBorderColor: 'rgba(255, 255, 255, 0.25)',
+                activeShadow: '0 0 0 2px rgba(24, 144, 255, 0.1)',
+              },
             },
           }}
         >
           <Card 
             title={<span style={{ fontSize: 24, fontWeight: 'bold', color: '#fff' }}>Brollo 登录</span>} 
-            style={{ width: 400, backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ 
+              width: 400, 
+              background: 'rgba(20, 20, 20, 0.95)',
+              backdropFilter: 'blur(20px)', 
+              border: '1px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+            }}
+            headStyle={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+            bodyStyle={{ background: 'transparent' }}
             bordered={false}
           >
             <Form onFinish={onFinish} layout="vertical" size="large">
-              <Form.Item label={<span style={{ color: 'rgba(255,255,255,0.8)' }}>邮箱</span>} name="email" rules={[{ required: true, type: 'email' }]}>
-                <Input style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff' }} placeholder="请输入邮箱" />
+              <Form.Item 
+                label={<span style={{ color: 'rgba(255,255,255,0.9)' }}>邮箱</span>} 
+                name="email" 
+                rules={[{ required: true, type: 'email', message: '请输入有效的邮箱地址' }]}
+              >
+                <Input placeholder="请输入邮箱" />
               </Form.Item>
-              <Form.Item label={<span style={{ color: 'rgba(255,255,255,0.8)' }}>密码</span>} name="password" rules={[{ required: true }]}>
-                <Input.Password style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff' }} placeholder="请输入密码" />
+              <Form.Item 
+                label={<span style={{ color: 'rgba(255,255,255,0.9)' }}>密码</span>} 
+                name="password" 
+                rules={[{ required: true, message: '请输入密码' }]}
+              >
+                <Input.Password placeholder="请输入密码" />
               </Form.Item>
               <Form.Item>
-                <Button type="primary" htmlType="submit" block style={{ height: 40, background: '#1890ff', borderColor: '#1890ff' }}>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  block 
+                  style={{ 
+                    height: 44, 
+                    fontSize: 16,
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    borderColor: 'transparent',
+                    fontWeight: 500
+                  }}
+                >
                   登录
                 </Button>
               </Form.Item>
-              <div style={{ textAlign: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.6)' }}>还没有账户？</span> <Link to="/register" style={{ color: '#1890ff' }}>立即注册</Link>
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <span style={{ color: 'rgba(255,255,255,0.65)' }}>还没有账户？</span>
+                {' '}
+                <Link to="/register" style={{ color: '#40a9ff', fontWeight: 500 }}>立即注册</Link>
               </div>
             </Form>
           </Card>

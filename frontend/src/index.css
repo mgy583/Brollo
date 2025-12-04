@@ -15,3 +15,24 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* 统一输入框边框样式 */
+.ant-input,
+.ant-input-password,
+.ant-input-affix-wrapper {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.ant-input:hover,
+.ant-input-password:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.ant-input:focus,
+.ant-input-password:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+}
