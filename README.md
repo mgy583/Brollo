@@ -60,18 +60,24 @@
 git clone https://github.com/mgy583/brollo.git
 cd brollo
 
-# 启动所有服务
+# 使用 Docker Compose 启动（在 Windows PowerShell 下可能需要以管理员身份运行 Docker Desktop）
 docker-compose up -d
 
 # 查看日志
 docker-compose logs -f
 ```
 
-服务地址:
+服务地址（本地默认端口）：
 - 前端: http://localhost
-- API 网关: http://localhost:8080
+- 用户服务: http://localhost:3000
+- 账户服务: http://localhost:3001
+- 交易服务: http://localhost:3002
+- 预算服务: http://localhost:3003
+- 报表服务: http://localhost:3004
+- 汇率服务: http://localhost:3005
 - MongoDB: localhost:27017
 - Redis: localhost:6379
+- TimescaleDB(Postgres): localhost:5432
 
 ### 本地开发
 
@@ -328,9 +334,29 @@ docker-compose build
 # 启动服务
 docker-compose up -d
 
-# 扩展服务
+# 仅重建并重启前端（前端代码修改后常需执行）
+docker-compose build frontend && docker-compose up -d frontend
+
+# 扩展服务示例（水平扩展）
 docker-compose up -d --scale account-service=3
 ```
+
+Windows 用户常见问题：
+
+- 错误: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+  - 说明: Docker Desktop 未运行或后台引擎没有启动（尤其在 Windows 登录后未自动启动时）。
+  - 解决: 通过系统托盘启动 Docker Desktop，等待左下角显示 "Docker is running"；或重启 Docker Desktop。
+  - 可在 PowerShell 中运行 `docker info` 来确认守护进程是否可用。
+
+- 若使用 WSL2 后端，请确保 `Docker Desktop` 的 WSL 集成已启用，且所需的 WSL 发行版正在运行。
+
+前端热更新与发布说明：
+
+- 开发时使用 `npm run dev`（在 `frontend` 目录）可以获得 Vite 的热更新体验；编辑样式后无需重建镜像。
+- 将修改发布到 Docker 环境后，如果看到旧样式或旧资源，可能是浏览器缓存或镜像未被重建造成的。常用处理方法：
+  - 在浏览器打开 DevTools -> Network，勾选 `Disable cache`，然后刷新页面（F5）；
+  - 在宿主机上执行 `docker-compose build frontend` 并 `docker-compose up -d frontend` 来重新构建镜像并替换正在运行的容器；
+  - Windows 用户可以使用仓库附带的 `rebuild-frontend.ps1` 脚本（参考下方）。
 
 ### Kubernetes 部署
 
