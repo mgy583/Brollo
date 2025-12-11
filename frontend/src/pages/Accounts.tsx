@@ -3,6 +3,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../utils/api'
+import { useAuthStore } from '../stores/authStore'
 
 export default function Accounts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -100,6 +101,13 @@ export default function Accounts() {
   ]
 
   const handleSubmit = async (values: any) => {
+    const isAuthenticated = useAuthStore.getState().isAuthenticated
+    const accessToken = useAuthStore.getState().accessToken
+    if (!isAuthenticated || !accessToken) {
+      message.error('请先登录')
+      window.location.href = '/login'
+      return
+    }
     if (editingAccount) {
       // 编辑模式
       const data = {

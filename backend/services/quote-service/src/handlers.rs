@@ -78,7 +78,6 @@ pub async fn convert_currency(
 
 async fn fetch_exchange_rates(pair: &str) -> Result<Vec<RateSource>> {
     // 模拟从多个源获取汇率
-    // 实际应从真实API获取
     
     let parts: Vec<&str> = pair.split('/').collect();
     if parts.len() != 2 {
@@ -86,7 +85,7 @@ async fn fetch_exchange_rates(pair: &str) -> Result<Vec<RateSource>> {
     }
     
     // 模拟数据
-    let base_rate = 6.5; // 示例CNY/USD汇率
+    let base_rate = 6.5; // CNY/USD汇率
     
     Ok(vec![
         RateSource {

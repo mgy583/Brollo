@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,      // 用户ID (等同于 user_id)
+    pub sub: String,      // 用户ID
     pub user_id: String,  // 用户ID
     pub username: String,
     pub role: String,
