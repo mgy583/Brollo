@@ -76,6 +76,7 @@ services:
       REDIS_URI: redis://redis:6379
       POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
+      RUST_BACKTRACE: "1"
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
       - "3000:3000"
@@ -103,6 +104,7 @@ services:
       REDIS_URI: redis://redis:6379
       POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
+      RUST_BACKTRACE: "1"
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
       - "3001:3001"
@@ -130,6 +132,7 @@ services:
       REDIS_URI: redis://redis:6379
       POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
+      RUST_BACKTRACE: "1"
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
       - "3002:3002"
@@ -157,6 +160,7 @@ services:
       REDIS_URI: redis://redis:6379
       POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
+      RUST_BACKTRACE: "1"
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
       - "3003:3003"
@@ -184,6 +188,7 @@ services:
       REDIS_URI: redis://redis:6379
       POSTGRES_URI: postgres://admin:admin123@timescaledb:5432/abook
       RUST_LOG: info
+      RUST_BACKTRACE: "1"
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
     ports:
       - "3004:3004"
